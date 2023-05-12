@@ -8,9 +8,9 @@ this fork will eventually be used in the rust rewrite of tuxfetch
 - use uname syscall for kernel version (basically instant)
 - dpkg package fetch that doesn't rely on the executable
 - more resilient wm fetch
-- more resilient resolution fetch (fallback to framebuffer)
+- a screen resolution fetch
 
-#original decription
+# original decription
 
 ## nixinfo
 A lib crate for gathering system info such as cpu, distro, environment, kernel, etc in Rust.
