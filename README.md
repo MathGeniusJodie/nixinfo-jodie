@@ -1,3 +1,17 @@
+fork of nixinfo designed to be as fast as possible, using lessons learned from making tuxfetch
+this fork will eventually be used in the rust rewrite of tuxfetch
+
+### todo
+- gpu fetch that doesn't rely on grep and lspci (should be 0.3ms)
+- apk package fetch that doesn't rely on the very slow apk executable (should be 1ms for ~700 packages)
+- use cpuid instruction on x86 (basically instant)
+- use uname syscall for kernel version (basically instant)
+- dpkg package fetch that doesn't rely on the executable
+- more resilient wm fetch
+- more resilient resolution fetch (fallback to framebuffer)
+
+#original decription
+
 ## nixinfo
 A lib crate for gathering system info such as cpu, distro, environment, kernel, etc in Rust.
 
