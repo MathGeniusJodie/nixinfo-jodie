@@ -5,7 +5,7 @@ this fork will eventually be used in the rust rewrite of tuxfetch
 also if I can upstream these changes to nixinfo this project will be archived
 
 ### todo
-- gpu fetch that doesn't rely on grep and lspci (should be 0.3ms)
+- ~~gpu fetch that doesn't rely on grep and lspci (should be 0.3ms)~~
 - apk package fetch that doesn't rely on the very slow apk executable (should be 1ms for ~700 packages)
 - use cpuid instruction on x86 (basically instant)
 - use uname syscall for kernel version (basically instant)
