@@ -2,6 +2,8 @@ use std::env;
 use std::fs::{self, read_to_string, File};
 use std::io;
 use std::process::Command;
+use std::io::BufReader;
+use std::io::BufRead;
 
 use glob::glob;
 use shared_functions::read;
@@ -138,34 +140,63 @@ pub fn env(var: &str) -> Option<String> {
     }
 }
 
-fn r#continue(output_check: String) -> Result<String, Error> {
-    let model = output_check
-        .split(':')
-        .collect::<Vec<&str>>()[2]
-        .trim()
-        .to_string();
-    if model.starts_with("Advanced Micro Devices, Inc.") {
-        Ok(model.split('.').collect::<Vec<&str>>()[1]
-            .trim()
-            .replace("[", "")
-            .replace("]", "")
-            .replace("\n", ""))
-    } else {
-        Ok(model.replace("\n", ""))
-    }
-}
 
 /// Obtain the name of the GPU, outputs to a string
-pub fn gpu() -> Result<String, Error> {
-    let output = Command::new("sh")
-        .args(&["-c", "lspci | grep -I 'VGA\\|Display\\|3D'"])
-        .output()?;
-    let output_check: String = String::from_utf8_lossy(&output.stdout).to_string();
-    if output_check.is_empty() {
-        Ok("N/A (could not run lspci/grep, make sure they are installed)".to_string())
-    } else {
-        r#continue(output_check)
+
+fn open_pci_ids() -> Option<File> {
+    [
+        "/usr/share/hwdata/pci.ids",
+        "/usr/share/misc/pci.ids",
+        "/usr/share/pci.ids",
+    ]
+    .iter()
+    .find_map(|path| File::open(path).ok())
+}
+
+fn lines_find(
+    reader: &mut BufReader<File>,
+    f: &dyn Fn(&Vec<u8>) -> bool,
+) -> Result<Option<Vec<u8>>, Error> {
+    let mut line = Vec::new();
+    loop {
+        line.clear();
+        reader.read_until(b'\n', &mut line)?;
+        if line.is_empty() {
+            break;
+        }
+        if f(&line) {
+            return Ok(Some(line));
+        }
     }
+    Ok(None)
+}
+
+pub fn gpu() -> Result<String, Error> {
+    let mut vendor = std::fs::read("/sys/class/drm/card0/device/vendor")?;
+    let mut device = std::fs::read("/sys/class/drm/card0/device/device")?;
+
+    if let Some(file) = open_pci_ids() {
+        let mut reader = BufReader::new(file);
+
+        if let Some(line) = lines_find(&mut reader, &|line| line.starts_with(&vendor[2..6]))? {
+            vendor = line[6..].to_vec();
+        }
+
+        if let Some(line) = lines_find(&mut reader, &|line| {
+            !line[0] == b'\t' || device.get(2..6) == line.get(1..5)
+        })? {
+            if line[0] == b'\t' {
+                device = line[7..].to_vec();
+            }
+        }
+    }
+    //remove newlines
+    vendor.pop();
+    device.pop();
+    let mut result = vendor;
+    result.push(b' ');
+    result.append(&mut device);
+    Ok(String::from_utf8_lossy(&result).to_string())
 }
 
 /// Obtain the hostname, outputs to a Result<String>
